@@ -63,7 +63,7 @@ def regression(df, x_name, y_name, maxlag):
     data['predicted_{}'.format(y_name)] = y_hat_df
     print(data.head(10))
     # compuate mse
-    reg_mse = mean_squared_error(y,y_hat)
+    reg_mse = mean_squared_error(y, y_hat)
     # compute residual value of y, y-y_hat, the residual value is the y in next round of loop
     if y_name == x_name:
         # learning rate is not in model 0

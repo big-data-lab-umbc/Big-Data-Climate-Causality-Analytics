@@ -57,7 +57,7 @@ for x_name_item in x_list:
 data_input.cache()
 
 n = data_input.count()
-nv = x_list[len(x_list)-1]
+nv = x_list[len(x_list) - 1]
 print(nv)
 # print(x_list)
 # maxlag = 3
@@ -75,40 +75,10 @@ def regression(x_name, y_name, maxlag, data=data_input):
     # data.show(10)
     # print(data.count())
     dataFrame = data
-    # if x_name == y_name:
-    #     dataFrame = data.select(x_name)
-    # else:
-    #     dataFrame = data.select(x_name, y_name)
-    #
-    # dataFrame = dataFrame.withColumn("id", monotonically_increasing_id())
-    # # dataFrame = dataFrame.withColumn('{}'.format(y_name), data.select(y_name))
-    # # add time lag for x_name columns
-    # w = Window().orderBy(col("id"))
-    # for i in range(1, maxlag + 1):
-    #     dataFrame = dataFrame.withColumn("%s_t-%s" % (x_name, str(i)), lag(dataFrame[x_name], i, 0).over(w))
-
-    # roll max_lag rows to get rid of the 0s
-    # dataFrame = dataFrame.withColumn("rid", monotonically_increasing_id())
-    # TODO: now the roll back is commented out, check if this is needed after other debugging is done
-    # maybe not, because in the join process in boosting function, the 0, 1, 2 will be removed
-    # dataFrame = dataFrame.filter(dataFrame.rid >= maxlag)
-    # print("====added rid columns ====")
-
-    # dataFrame.show(10)
-    # print(dataFrame.count())
-    # dataFrame = dataFrame.drop('id')
-    # dataFrame = dataFrame.drop('rid')
     input_feature_name = []
     for lagnumber in range(1, maxlag + 1):
         newname = "{}_t-{}".format(x_name, lagnumber)
         input_feature_name.append(newname)
-    # input_feature_name = dataFrame.schema.names
-
-    # input_feature_name.remove("rid")
-    # input_feature_name.remove("id")
-    # input_feature_name.remove(x_name)
-    # if not x_name == y_name:
-    #     input_feature_name.remove(y_name)
 
     print("input_feature_name are")
     print(input_feature_name)
@@ -135,15 +105,6 @@ def regression(x_name, y_name, maxlag, data=data_input):
     featureImportances = model.stages[1].featureImportances
     print("Feature Importance")
     print(featureImportances)
-
-    # data = data.withColumn("rid", monotonically_increasing_id())
-    # data = data.filter(data.rid >= maxlag)
-    # print("====added rid columns ====")
-    # #
-    # print("!!!!!!!!!")
-    # print(dataFrame.count())  # 996
-    # print(predictions.count())  # 996
-    # print("!!!!!!!!!")
 
     y_hat = predictions.select('predicted_{}'.format(y_name))
     y_hat = y_hat.withColumn("yid", monotonically_increasing_id())
@@ -173,12 +134,7 @@ def regression(x_name, y_name, maxlag, data=data_input):
         dataFrame = dataFrame.drop("yid")
         return_col = dataFrame.select("{}res{}".format(y_name, x_name))
         print("after round 1 ")
-        # dataFrame.show(5)
-        # print(dataFrame.count())
 
-    # n = dataFrame.count()
-    # print("n is ")
-    # print(n)
     print("data for next step is ")
 
     return return_col, mse, featureImportances
@@ -205,40 +161,13 @@ def boosting(x_list_name, y_name, maxlag, data=data_input):
         if pivot_x == 0:
             res_list = regression(x_list_name[pivot_x], y_name, maxlag)
         else:
-            # TODO: seems this join has some problem, in round 3, the dataframe size suddenly reduce to 4
-            # TODO: check the id with the dataframe and the residual column that pass back
-            # SOLVED: monotonically_increasing_id() is guaranteed to be increasing id from 0,1,2,3,4, ....
-            # SOLVED: so I used row_number instead of that to ensure this step of join works
-            # SOLVED: but not sure why it works in our regression function, if something gets wrong, will also apply this
 
-            # join the residual value to the dataframe in next round
-            # print(res_list[0])
             res_col = res_list[0]
 
-            # df_update = res_list[1]
-
-            # print("n is ")
-            # print(n)
-
             res_col = res_col.withColumn("rid", monotonically_increasing_id())
-            # res_col = res_col.withColumn('id', row_number().over(Window.orderBy(monotonically_increasing_id())) - 1)
-            # print("res_col count is ")
-            # print(res_col.count())
-            # res_col.show(10)
 
-            # df_update = df_update.withColumn("id", monotonically_increasing_id())
-            # df_update = df_update.withColumn('id', row_number().over(Window.orderBy(monotonically_increasing_id())) - 1)
-            # print("df update count is ")
-            # print(df_update.count())
-            # df_update.show(10)
             data = data.join(res_col, (res_col.rid == data.id))
-            # data = res_col.join(df_update, "id")
 
-            # outer join shows the super weired id numbers like 17179869184
-            # joined_df = df_as1.join(df_as2, col("df_as1.name") == col("df_as2.name"), 'outer')
-
-            # # data.show(10)
-            # data = data.drop('id')
             data = data.drop('rid')
             res_list = regression(x_list_name[pivot_x], y_name, maxlag, data)
 
@@ -258,8 +187,6 @@ def boosting(x_list_name, y_name, maxlag, data=data_input):
         if pivot_x == len(x_list_name) - 1:
             print("I am saving the last record in g boosting ")
             return_result_col = res_col
-            # return_result_col.show(5)
-            # spark.stop()
 
     return mse_arr, predicted_name_list, r2_arr, maxlag, x_list_name, return_result_col
 
@@ -289,12 +216,6 @@ def causality_test(boosting_result_list):
     print("mse of all variables is")
     print(mse_all)
     print("\n!!!!!!!!!!!!!!!!!!!!!!!")
-    # print("change of mse (ratio)")
-    #     mse_change = mse_y/mse_all
-    # mse_change = ((mse_y-mse_all)/(3-2))/(mse_all/(999-3))
-
-    # print(np.log(mse_change))
-    # print("!!!!!!!!!!!!!!!!!!!!!!!\n")
 
     print("~~~~~~~~~~~~~~~~~")
     print("the F-score is")
@@ -325,42 +246,18 @@ def create_test_list(maxlag, input_list=x_list):
         # y is effect
         y = x
         tmp_list = input_list.remove(x)
-        # print("===input _list =======")
-        # print(input_list)
-        # print("tmp_list")
-        # print(tmp_list)
-        # print("=====permutation======")
+
         permutation_x_list = list(itertools.permutations(input_list))
-        # print("permutation_x_list")
-        # print(permutation_x_list)
 
         for permutation_x in permutation_x_list:
-            # permutation_x = list(permutation_x).insert(0, y)
             permutation_x = list(permutation_x)
             permutation_x.insert(0, x)
-            # print(permutation_x)
             y_x_list.append([permutation_x, x, maxlag])
-            # print(y_x_list)
-            # y_x_list.append(permutation_x)
-            # print(y_x_list)
 
         input_list.insert(idx, x)
-        # print(input_list)
-
-        # ('x1', 'x2', 'x3'), ('x1', 'x3', 'x2'), ('x2', 'x1', 'x3'), ('x2', 'x3', 'x1'), ('x3', 'x1', 'x2'), ('x3', 'x2', 'x1')
-        # we want [4,1,2,3], 4, lag
-
-        # for permutation_x in permutation_x_list:
-        #     list(permutation_x).insert(0, y)
-        #     y_x_list.append((list(permutation_x), y))
-        #
-        # algorithm_input_list.append(permutation_x_list)
 
     return y_x_list
 
-
-# print("result:")
-# print(create_test_list(maxlag, x_list))
 
 test_list_name = create_test_list(maxlag, x_list)
 # print(test_list_name)
@@ -368,26 +265,8 @@ test_list_name = create_test_list(maxlag, x_list)
 for iterItem in test_list_name:
     print("=====")
     print(iterItem)
-# spark.shop()
-# def create_causality_mtx(maxlag):
-#
-#     return
 
-### this approach does't work in spark, spark can only run one ml model at a time - rdd inside rdd
-# input_list_rdd = spark.sparkContext.parallelize(test_list_name,3)
-# mapped_rdd = input_list_rdd.map(lambda record: print("!!!!{}{}".format(record, test_list_name.index(record))))
-# res = input_list_rdd.map(lambda record: causality_test(boosting(record[0], record[1], record[2])))
-
-# solution: multiprocessing pool
 pool = ThreadPool(thread_pool_num)
-# p = Pool(processes=2)
-# result = pool.map(lambda test_list_name: causality_test(boosting(test_list_name[0], test_list_name[1], test_list_name[2])))
-# result = pool.map(causality_test(boosting(test_list_name)), test_list_name)
-
-### test_list_name For testing:
-# test_list_name = [[["x3","x4","x2","x1"], "x3", 3], [["x3","x1","x2","x4"], "x3", 3], [["x1", "x2", "x3", "x4"], "x1", 3]]
-# test_list_name = [[["x3","x4","x2","x1"], "x3", 3]]
-
 
 ### output result
 result = pool.map(lambda iter_item: causality_test(boosting(iter_item[0], iter_item[1], iter_item[2])), test_list_name)
@@ -435,11 +314,6 @@ incremental_new_var_effect_res = pool.map(
     incremental_gbt_new_var_effect_list)
 
 
-# effect:
-
-# result[1] col
-# result[2] mse
-
 def incremental_gbt_new_var_as_causing_causality(new_x_name, maxlag, old_result, data=data_input, incre_k=k):
     ### every other variable causes x  (x,a)
 
@@ -456,21 +330,9 @@ def incremental_gbt_new_var_as_causing_causality(new_x_name, maxlag, old_result,
 
     new_x_name = nv
 
-    # TODO: join the return pred column to data
-    # old_pred = old_pred.withColumn('pid', row_number().over(Window.orderBy(monotonically_increasing_id())) - 1)
     old_pred = old_pred.withColumn("pid", monotonically_increasing_id())
-    # data = data.withColumn('id', row_number().over(Window.orderBy(monotonically_increasing_id())) - 1)
     data = old_pred.join(data, (data.id == old_pred.pid))
-    # data.show(10)
-    # return_col, data, mse, n, featureImportances
     regression_res = regression(new_x_name, y_name, maxlag, data)
-
-    ## causality test using  xxx
-    # f_score = ((mse_y - mse_all) / mse_all) * ((n - k * maxlag) / maxlag)
-    # old_mse → mse_y
-    # regression_res[2] = mse_all
-    # n → regression_res[3]  number of rows
-    # k → len(x_list)+1  input lenth + 1, 1 is the new variable
 
     mse_y = old_mse
     mse_all = regression_res[1]

@@ -202,9 +202,6 @@ def Granger_automated(maxlag):
     t_lag += 1
 
 
-# g = Digraph('G', filename='granger_all_new.gv', strict=True)
-
-# edgegranger = []
 data = df
 model = VAR(data)
 result = {}
@@ -220,9 +217,5 @@ output_df.columns = ['Effect-Node','Cause-Node', 'Time-Lag', 'Strength', 'Method
 output_df = output_df.sort_values(by=['Strength'])
 
 print(output_df.head(20))
-
-# print(g)
-# print(g.view())
-# g
 
 output_df.to_csv("out_baseline_{}.csv".format(data_file_name),header=False,index=False)

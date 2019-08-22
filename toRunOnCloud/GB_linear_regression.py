@@ -46,10 +46,6 @@ def regression(df, x_name, y_name, maxlag):
     reg_y = LinearRegression()
     # fit model using data X, y
     reg_y.fit(X, y)
-    # check number of features
-    #     print(reg_y.n_features_)
-    # check feature importance
-    #     print(reg_y.feature_importances_)
 
     # y_hat is the predicted value of y
     y_hat = reg_y.predict(X)
@@ -61,7 +57,7 @@ def regression(df, x_name, y_name, maxlag):
     data['predicted_{}'.format(y_name)] = y_hat_df
     print(data.head(10))
     # compuate mse
-    reg_mse = mean_squared_error(y,y_hat)
+    reg_mse = mean_squared_error(y, y_hat)
     # compute residual value of y, y-y_hat, the residual value is the y in next round of loop
     if y_name == x_name:
         # learning rate is not in model 0
@@ -79,9 +75,6 @@ def regression(df, x_name, y_name, maxlag):
     # score is the r2_score, same results
     print(reg_y.score(X, y))
     r2 = reg_y.score(X, y)
-    #     print("var_reg is")
-    #   print(df['predicted_{}'.format(y_name)].var(ddof=0))
-    #     var_reg = df['predicted_{}'.format(y_name)].var(ddof=0)
 
     # print explained_variance_score
     print("explained_variance_score")
@@ -164,8 +157,6 @@ def causality_test(boosting_result_list):
 
     df['last_step'] = df['pred_y'] - df[name_list[len(name_list) - 1]]
 
-    # df['step_3'] = df['predicted_x3'] + df['predicted_x3resx3'] + df['predicted_x3resx3resx4']
-
     r2_y = r2_arr[len(r2_arr) - 2]
     #     print(mse_arr[len(mse_arr)-1])
     r2_all = r2_arr[len(r2_arr) - 1]
@@ -197,24 +188,12 @@ def create_test_list(maxlag, input_list=x_list):
         # y is effect
         y = x
         tmp_list = input_list.remove(x)
-        # print("===input _list =======")
-        # print(input_list)
-        # print("tmp_list")
-        # print(tmp_list)
-        # print("=====permutation======")
         permutation_x_list = list(itertools.permutations(input_list))
-        # print("permutation_x_list")
-        # print(permutation_x_list)
 
         for permutation_x in permutation_x_list:
-            # permutation_x = list(permutation_x).insert(0, y)
             permutation_x = list(permutation_x)
             permutation_x.insert(0, x)
-            # print(permutation_x)
             y_x_list.append([permutation_x, x, maxlag])
-            # print(y_x_list)
-            # y_x_list.append(permutation_x)
-            # print(y_x_list)
 
         input_list.insert(idx, x)
         # print(input_list)
@@ -231,7 +210,6 @@ for iter_item in test_list_name:
     #     causality_test(boosting(iter_item[0], iter_item[1], iter_item[2]))
     result.append(causality_test(boosting(iter_item[0], iter_item[1], iter_item[2])))
 
-
 for i in result[:]:
     if len(i) == 0:
         result.remove(i)
@@ -240,7 +218,6 @@ result_save = []
 for item in result:
     # print(item[0])
     result_save.append(item)
-
 
 with open("output_linear_{}.csv".format(data_file_name), "w", newline='') as f:
     for row in result_save:
